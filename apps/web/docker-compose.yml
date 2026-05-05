@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  react-auth:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+    networks:
+      - app-network
+
+  # Serviço opcional para backend (descomente se necessário)
+  # backend:
+  #   image: your-backend-image:latest
+  #   ports:
+  #     - "3001:3001"
+  #   restart: unless-stopped
+  #   environment:
+  #     - NODE_ENV=production
+  #     - DATABASE_URL=your-database-url
+  #   networks:
+  #     - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+# Volumes opcionais para persistência de dados
+# volumes:
+#   postgres_data:
