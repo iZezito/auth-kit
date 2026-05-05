@@ -1,159 +1,76 @@
-# Turborepo starter
+# Auth Kit
 
-This Turborepo starter is maintained by the Turborepo core team.
+Monorepo com solução completa de autenticação, composto por uma API REST e uma aplicação web. Serve como base para projetos que precisam de um sistema de auth robusto pronto para uso.
 
-## Using this example
+## Estrutura
 
-Run the following command:
-
-```sh
-npx create-turbo@latest
+```
+apps/
+  server/   # API (Bun + Elysia.js)
+  web/      # Frontend (React + Vite)
 ```
 
-## What's inside?
+## Funcionalidades
 
-This Turborepo includes the following packages/apps:
+- Cadastro e login com email/senha
+- Verificação de email
+- Recuperação de senha via email
+- Autenticação em dois fatores (2FA) por código OTP
+- Login social com Google (OAuth2 + PKCE)
+- Sessões via JWT em cookie HttpOnly
+- Cache de sessão com Redis
 
-### Apps and Packages
+## Stack
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
+**Backend**
+- [Bun](https://bun.sh/) — runtime e gerenciador de pacotes
+- [Elysia.js](https://elysiajs.com/) — framework HTTP
+- [Drizzle ORM](https://orm.drizzle.team/) + PostgreSQL — banco de dados
+- [Redis](https://redis.io/) — cache de sessão
+- [Arctic](https://arcticjs.dev/) — OAuth2
+- [React Email](https://react.email/) + Nodemailer — emails transacionais
 
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
+**Frontend**
+- [React 19](https://react.dev/) + [Vite](https://vitejs.dev/) + TypeScript
+- [Tailwind CSS v4](https://tailwindcss.com/) + [shadcn/ui](https://ui.shadcn.com/)
+- [TanStack Query](https://tanstack.com/query) — gerenciamento de estado assíncrono
+- [React Hook Form](https://react-hook-form.com/) + [Zod](https://zod.dev/) — formulários e validação
 
-### Utilities
+## Como rodar
 
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo build
-```
-
-Without global `turbo`, use your package manager:
+Instale as dependências na raiz do monorepo:
 
 ```sh
-cd my-turborepo
-npx turbo build
-yarn dlx turbo build
-pnpm exec turbo build
+bun install
 ```
 
-You can build a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
+Suba todos os serviços em modo de desenvolvimento:
 
 ```sh
-turbo build --filter=docs
+bun run dev
 ```
 
-Without global `turbo`:
+Ou rode cada app individualmente:
 
 ```sh
-npx turbo build --filter=docs
-yarn exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
+bun run dev --filter=server
+bun run dev --filter=web
 ```
 
-### Develop
+> O servidor sobe por padrão em `http://localhost:3000` e o frontend em `http://localhost:5173`.
 
-To develop all apps and packages, run the following command:
+## Variáveis de ambiente
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
+Copie os arquivos de exemplo e preencha os valores:
 
-```sh
-cd my-turborepo
-turbo dev
-```
+**`apps/server`**
 
-Without global `turbo`, use your package manager:
-
-```sh
-cd my-turborepo
-npx turbo dev
-yarn exec turbo dev
-pnpm exec turbo dev
-```
-
-You can develop a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo dev --filter=web
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo dev --filter=web
-yarn exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
-```
-
-### Remote Caching
-
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
-
-Turborepo can use a technique known as [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo login
-```
-
-Without global `turbo`, use your package manager:
-
-```sh
-cd my-turborepo
-npx turbo login
-yarn exec turbo login
-pnpm exec turbo login
-```
-
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo link
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo link
-yarn exec turbo link
-pnpm exec turbo link
-```
-
-## Useful Links
-
-Learn more about the power of Turborepo:
-
-- [Tasks](https://turborepo.dev/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.dev/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.dev/docs/reference/configuration)
-- [CLI Usage](https://turborepo.dev/docs/reference/command-line-reference)
+| Variável | Descrição |
+|---|---|
+| `DATABASE_URL` | URL de conexão do PostgreSQL |
+| `REDIS_URL` | URL de conexão do Redis |
+| `JWT_SECRET` | Chave secreta para assinar os tokens JWT |
+| `CLIENT_URL` | URL do frontend |
+| `GOOGLE_CLIENT_ID` | Client ID do Google OAuth |
+| `GOOGLE_CLIENT_SECRET` | Client Secret do Google OAuth |
+| `MAIL_*` | Configurações do servidor de email (host, porta, usuário, senha) |
