@@ -3,7 +3,7 @@ import { authSchema, google, type GoogleIdTokenClaims } from "./model";
 import { AuthService } from "./service";
 import { jwtService } from "@/plugin/jwt";
 import * as arctic from "arctic";
-import { redis } from "@/lib/redis";
+import { redis, redisKeys, redisTtl } from "@/lib/redis";
 import { authGuard } from "@/plugin/middleware";
 import { db } from "@/lib/db";
 import { users } from "@/drizzle/migrations/schema";
@@ -23,7 +23,7 @@ export const authController = new Elysia({ prefix: "/auth" })
 
       if (user.twoFactorAuthenticationEnabled) {
         if (!body.codeOTP) {
-          AuthService.send2FACode(user);
+          await AuthService.send2FACode(user);
           return status(202, { message: "Authentication Code sent to email." });
         }
         const isCodeValid = await AuthService.validate2FACode(
@@ -46,7 +46,11 @@ export const authController = new Elysia({ prefix: "/auth" })
         maxAge: 60 * 60 * 48,
       });
       const { password, ...rest } = user;
-      await redis.setex(`user:${user.id}`, 60 * 15, JSON.stringify(rest));
+      await redis.setex(
+        redisKeys.user(user.id),
+        redisTtl.userCache,
+        JSON.stringify(rest),
+      );
 
       return { token };
     },
@@ -89,6 +93,7 @@ export const authController = new Elysia({ prefix: "/auth" })
       if (!sessionData) {
         return status(400, { error: "Invalid state" });
       }
+      pkceStore.delete(state);
 
       try {
         const tokens = await google.validateAuthorizationCode(
@@ -131,8 +136,8 @@ export const authController = new Elysia({ prefix: "/auth" })
 
         const { password, ...rest } = userEntity;
         await redis.setex(
-          `user:${userEntity.id}`,
-          60 * 15,
+          redisKeys.user(userEntity.id),
+          redisTtl.userCache,
           JSON.stringify(rest),
         );
 
@@ -158,10 +163,7 @@ export const authController = new Elysia({ prefix: "/auth" })
   .post(
     "/logout",
     async ({ cookie, user }) => {
-      const token = cookie.auth?.value;
-      if (!token) return { message: "Logged out" };
-
-      await redis.del(`user:${user.id}`);
+      await redis.del(redisKeys.user(user.id));
       cookie.auth.remove();
 
       return { message: "Logout successful" };

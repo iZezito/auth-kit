@@ -3,7 +3,7 @@ import { UserService } from "./service";
 import { authGuard } from "@/plugin/middleware";
 import { sendMail } from "@/lib/mail";
 import { renderResetPasswordEmail } from "@/emails/render";
-import { isBefore } from "date-fns";
+
 import { paramModel } from "@/plugin/model";
 import { _selectUser, createUser, selectUser, updateUser } from "./model";
 
@@ -39,14 +39,14 @@ export const userController = new Elysia({ prefix: "/users" })
     "/forgot-password",
     async ({ body: { email } }) => {
       const userEntity = await UserService.findByEmail(email);
-      if (userEntity !== null) {
+      if (userEntity) {
         const resetToken = await UserService.createPasswordResetToken(
           userEntity.id,
         );
         const html = renderResetPasswordEmail(
           `${Bun.env.CLIENT_URL}/reset-password?token=${resetToken}`,
         );
-        sendMail(userEntity.email, "Password Reset", html);
+        await sendMail(userEntity.email, "Password Reset", html);
       }
       return "If an account with that email address exists, it will receive an email with instructions for resetting its password.";
     },
@@ -62,15 +62,13 @@ export const userController = new Elysia({ prefix: "/users" })
   .put(
     "/password-reset",
     async ({ status, body: { token, newPassword } }) => {
-      const [resetToken] = await UserService.findByToken(token);
+      const userId = await UserService.consumePasswordResetToken(token);
 
-      if (isBefore(resetToken.expiryDate, new Date())) {
-        return status(410, "Token expired.");
+      if (!userId) {
+        return status(410, "Token invalid or expired.");
       }
 
-      if (resetToken.userId !== null) {
-        await UserService.updatePassword(resetToken.userId, newPassword);
-      }
+      await UserService.updatePassword(userId, newPassword);
 
       return "Password changed successfully.";
     },
@@ -109,7 +107,7 @@ export const userController = new Elysia({ prefix: "/users" })
     },
     {
       response: {
-        200: _selectUser,
+        200: selectUser,
         403: t.String(),
       },
       body: updateUser,

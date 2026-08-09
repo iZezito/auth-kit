@@ -2,12 +2,12 @@ import type { AuthBody } from "./model";
 import { password } from "bun";
 import { renderOtpEmail } from "@/emails/render";
 import { sendMail } from "@/lib/mail";
-import { UserPlain, type User } from "@/modules/user/model";
-import { addHours, isAfter } from "date-fns";
+import type { UserPlain } from "@/modules/user/model";
 import { BadCredentialsError } from "@/error";
 import { db } from "@/lib/db";
-import { twoFactorAuthentication, users } from "@/drizzle/migrations/schema";
+import { users } from "@/drizzle/migrations/schema";
 import { eq } from "drizzle-orm";
+import { redis, redisKeys, redisTtl } from "@/lib/redis";
 
 export abstract class AuthService {
   static async login(body: AuthBody) {
@@ -32,40 +32,25 @@ export abstract class AuthService {
   static async send2FACode(user: UserPlain) {
     const code = Math.floor(100000 + Math.random() * 900000).toString();
 
-    await db
-      .insert(twoFactorAuthentication)
-      .values({
-        userId: user.id,
-        code,
-        expiryDate: addHours(new Date(), 2),
-      })
-      .onConflictDoUpdate({
-        target: twoFactorAuthentication.userId,
-        set: {
-          code,
-          expiryDate: addHours(new Date(), 2),
-        },
-      });
+    await redis.setex(redisKeys.twoFactor(user.id), redisTtl.twoFactor, code);
 
     const html = renderOtpEmail(code);
-    sendMail(user.email, "Two-Factor Authentication Code", html);
+    await sendMail(user.email, "Two-Factor Authentication Code", html);
   }
 
   static async validate2FACode(userId: string, code: string) {
-    const [twoFactorAuth] = await db
-      .select()
-      .from(twoFactorAuthentication)
-      .where(eq(twoFactorAuthentication.userId, userId));
+    const result = await redis.eval(
+      `
+        if redis.call("GET", KEYS[1]) == ARGV[1] then
+          return redis.call("DEL", KEYS[1])
+        end
+        return 0
+      `,
+      1,
+      redisKeys.twoFactor(userId),
+      code,
+    );
 
-    const isValid =
-      twoFactorAuth &&
-      twoFactorAuth.code === code &&
-      isAfter(twoFactorAuth.expiryDate, new Date());
-
-    if (isValid)
-      db.delete(twoFactorAuthentication).where(
-        eq(twoFactorAuthentication.id, twoFactorAuth.id),
-      );
-    return isValid;
+    return result === 1;
   }
 }

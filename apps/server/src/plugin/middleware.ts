@@ -9,7 +9,11 @@ export const authGuard = new Elysia({ name: "auth-guard" })
   .use(jwtService)
   .use(bearer())
   .derive({ as: "scoped" }, async ({ bearer, jwt, cookie }) => {
-    const token = cookie.auth?.value || bearer;
+    const cookieToken = cookie.auth?.value;
+    const token =
+      typeof cookieToken === "string" && cookieToken.length > 0
+        ? cookieToken
+        : bearer;
 
     if (!token) {
       throw new UnauthorizedError("Authentication token not provided!");

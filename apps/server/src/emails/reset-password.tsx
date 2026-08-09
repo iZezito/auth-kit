@@ -38,7 +38,7 @@ export default function ResetPasswordEmail({ resetUrl }: { resetUrl: string }) {
             If you didn’t request a password reset, you can ignore this email.
           </Text>
           <Text className="text-gray-500 text-xs mt-2">
-            This link will expire in 30 minutes.
+            This link will expire in 1 hour.
           </Text>
         </Section>
       </Container>

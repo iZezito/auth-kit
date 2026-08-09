@@ -1,17 +1,12 @@
 import { password, randomUUIDv7 } from "bun";
 import type { User, UserCreate, UserPlain, UserUpdate } from "./model";
-import { addDays, addHours, isAfter } from "date-fns";
-import { CustomError, NotFoundError } from "@/error";
+import { NotFoundError } from "@/error";
 import { db } from "@/lib/db";
-import {
-  users,
-  emailVerifications,
-  passwordResetTokens,
-} from "drizzle/migrations/schema";
+import { users } from "@/drizzle/migrations/schema";
 import { renderVerifyEmail } from "@/emails/render";
 import { sendMail } from "@/lib/mail";
 import { eq } from "drizzle-orm";
-import { redis } from "@/lib/redis";
+import { redis, redisKeys, redisTtl } from "@/lib/redis";
 
 export abstract class UserService {
   static async save(user: UserCreate) {
@@ -35,11 +30,11 @@ export abstract class UserService {
         `${Bun.env.CLIENT_URL}/validate-email?token=${token}`,
       );
 
-      sendMail(newUser.email, "Account Verify", html);
+      await sendMail(newUser.email, "Account Verify", html);
 
       return newUser;
     } catch (e: any) {
-      if (e.cause.errno === "23505") {
+      if (e?.cause?.errno === "23505") {
         return null;
       }
       throw e;
@@ -58,10 +53,12 @@ export abstract class UserService {
         password: bcryptHash,
       })
       .where(eq(users.id, userId));
+
+    await this.invalidateCache(userId);
   }
 
   static async findById(id: string) {
-    const cacheKey = `user:${id}`;
+    const cacheKey = redisKeys.user(id);
 
     const cached = await redis.get(cacheKey);
     if (cached) {
@@ -77,7 +74,7 @@ export abstract class UserService {
 
     if (!user) throw new NotFoundError("User not found!");
 
-    await redis.setex(cacheKey, 60 * 15, JSON.stringify(user));
+    await redis.setex(cacheKey, redisTtl.userCache, JSON.stringify(user));
 
     return user;
   }
@@ -115,17 +112,18 @@ export abstract class UserService {
 
     await this.invalidateCache(user.id);
 
-    return user;
+    const { password, ...publicUser } = user;
+    return publicUser;
   }
 
   static async createVerificationEmailToken(userId: string) {
     const verificationToken = randomUUIDv7();
 
-    await db.insert(emailVerifications).values({
-      verificationToken,
+    await redis.setex(
+      redisKeys.emailVerification(verificationToken),
+      redisTtl.emailVerification,
       userId,
-      expiryDate: addDays(new Date(), 1),
-    });
+    );
 
     return verificationToken;
   }
@@ -133,20 +131,21 @@ export abstract class UserService {
   static async createPasswordResetToken(userId: string) {
     const token = randomUUIDv7();
 
-    await db
-      .insert(passwordResetTokens)
-      .values({
-        token,
-        userId,
-        expiryDate: addHours(new Date(), 1),
-      })
-      .onConflictDoUpdate({
-        target: passwordResetTokens.userId,
-        set: {
-          token,
-          expiryDate: addHours(new Date(), 1),
-        },
-      });
+    const userTokenKey = redisKeys.passwordResetByUser(userId);
+    const previousToken = await redis.get(userTokenKey);
+    const transaction = redis.multi();
+
+    if (previousToken) {
+      transaction.del(redisKeys.passwordReset(previousToken));
+    }
+
+    transaction.setex(
+      redisKeys.passwordReset(token),
+      redisTtl.passwordReset,
+      userId,
+    );
+    transaction.setex(userTokenKey, redisTtl.passwordReset, token);
+    await transaction.exec();
 
     return token;
   }
@@ -160,38 +159,37 @@ export abstract class UserService {
   }
 
   static async validateEmail(token: string) {
-    const [emailVerification] = await db
-      .select()
-      .from(emailVerifications)
-      .where(eq(emailVerifications.verificationToken, token));
+    const userId = await redis.getdel(redisKeys.emailVerification(token));
 
-    if (
-      emailVerification !== null &&
-      isAfter(emailVerification.expiryDate, new Date())
-    ) {
-      await db.transaction(async (tx) => {
-        await tx.update(users).set({
-          emailVerified: true,
-        });
+    if (!userId) return false;
 
-        await db
-          .delete(emailVerifications)
-          .where(eq(emailVerifications.id, emailVerification.id));
+    const [verifiedUser] = await db
+      .update(users)
+      .set({ emailVerified: true })
+      .where(eq(users.id, userId))
+      .returning({ id: users.id });
 
-        return true;
-      });
-    }
-    return false;
+    if (!verifiedUser) return false;
+
+    await this.invalidateCache(verifiedUser.id);
+    return true;
   }
 
-  static async findByToken(token: string) {
-    return await db
-      .select()
-      .from(passwordResetTokens)
-      .where(eq(passwordResetTokens.token, token));
+  static async consumePasswordResetToken(token: string) {
+    const userId = await redis.getdel(redisKeys.passwordReset(token));
+
+    if (!userId) return null;
+
+    const userTokenKey = redisKeys.passwordResetByUser(userId);
+    const activeToken = await redis.get(userTokenKey);
+
+    if (activeToken !== token) return null;
+
+    await redis.del(userTokenKey);
+    return userId;
   }
 
   static async invalidateCache(id: string) {
-    await redis.del(`user:${id}`);
+    await redis.del(redisKeys.user(id));
   }
 }

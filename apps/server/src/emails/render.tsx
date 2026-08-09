@@ -6,7 +6,7 @@ import ResetPasswordEmail from "./reset-password";
 
 export function renderVerifyEmail(verificationUrl: string): string {
   return renderToStaticMarkup(
-    <VerifyEmail verificationUrl={verificationUrl} />
+    <VerifyEmail verificationUrl={verificationUrl} />,
   );
 }
 

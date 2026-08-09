@@ -21,7 +21,7 @@ export type AuthBody = Static<typeof authSchema>;
 export const google = new Google(
   Bun.env.GOOGLE_CLIENT_ID!,
   Bun.env.GOOGLE_CLIENT_SECRET!,
-  "http://localhost:3000/auth/oauth/google/callback"
+  "http://localhost:3000/auth/oauth/google/callback",
 );
 
 export type GoogleIdTokenClaims = {

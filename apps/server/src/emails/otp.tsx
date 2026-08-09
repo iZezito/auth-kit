@@ -22,7 +22,7 @@ export default function OTPEmail({ otp }: { otp: string }) {
           </Text>
 
           <Text className="text-gray-400 font-light text-xs">
-            This code is valid for 10 minutes.
+            This code is valid for 2 hours.
           </Text>
 
           <Text className="text-gray-500 text-xs mt-2">

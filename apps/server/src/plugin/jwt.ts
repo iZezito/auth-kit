@@ -6,5 +6,5 @@ export const jwtService = new Elysia({ name: "jwt-plugin" }).use(
     name: "jwt",
     secret: Bun.env.JWT_SECRET! || "12345678",
     exp: "4d",
-  })
+  }),
 );
