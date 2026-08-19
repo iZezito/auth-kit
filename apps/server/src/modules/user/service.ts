@@ -1,12 +1,12 @@
 import { password, randomUUIDv7 } from "bun";
 import type { User, UserCreate, UserPlain, UserUpdate } from "./model";
-import { NotFoundError } from "@/error";
-import { db } from "@/lib/db";
-import { users } from "@/drizzle/migrations/schema";
-import { renderVerifyEmail } from "@/emails/render";
-import { sendMail } from "@/lib/mail";
+import { NotFoundError } from "@server/error";
+import { db } from "@server/lib/db";
+import { users } from "@server/drizzle/migrations/schema";
+import { renderVerifyEmail } from "@server/emails/render";
+import { sendMail } from "@server/lib/mail";
 import { eq } from "drizzle-orm";
-import { redis, redisKeys, redisTtl } from "@/lib/redis";
+import { redis, redisKeys, redisTtl } from "@server/lib/redis";
 
 export abstract class UserService {
   static async save(user: UserCreate) {
@@ -30,7 +30,7 @@ export abstract class UserService {
         `${Bun.env.CLIENT_URL}/validate-email?token=${token}`,
       );
 
-      await sendMail(newUser.email, "Account Verify", html);
+      sendMail(newUser.email, "Account Verify", html);
 
       return newUser;
     } catch (e: any) {

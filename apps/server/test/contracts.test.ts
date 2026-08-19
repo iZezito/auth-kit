@@ -5,13 +5,13 @@ import {
   ForbiddenError,
   NotFoundError,
   UnauthorizedError,
-} from "@/error";
-import { redis, redisKeys, redisTtl } from "@/lib/redis";
+} from "@server/error";
+import { redis, redisKeys, redisTtl } from "@server/lib/redis";
 import {
   renderOtpEmail,
   renderResetPasswordEmail,
   renderVerifyEmail,
-} from "@/emails/render";
+} from "@server/emails/render";
 
 afterAll(() => redis.disconnect());
 

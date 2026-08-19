@@ -4,7 +4,7 @@ import {
   createSelectSchema,
   createUpdateSchema,
 } from "drizzle-typebox";
-import { users } from "@/drizzle/migrations/schema";
+import { users } from "@server/drizzle/migrations/schema";
 
 const _createUser = createInsertSchema(users, {
   email: t.String({ format: "email" }),

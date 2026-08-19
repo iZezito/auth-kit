@@ -1,12 +1,12 @@
 import { Elysia, t } from "elysia";
 import { authSchema, google, type GoogleIdTokenClaims } from "./model";
 import { AuthService } from "./service";
-import { jwtService } from "@/plugin/jwt";
+import { jwtService } from "@server/plugin/jwt";
 import * as arctic from "arctic";
-import { redis, redisKeys, redisTtl } from "@/lib/redis";
-import { authGuard } from "@/plugin/middleware";
-import { db } from "@/lib/db";
-import { users } from "@/drizzle/migrations/schema";
+import { redis, redisKeys, redisTtl } from "@server/lib/redis";
+import { authGuard } from "@server/plugin/middleware";
+import { db } from "@server/lib/db";
+import { users } from "@server/drizzle/migrations/schema";
 
 export const authController = new Elysia({ prefix: "/auth" })
   .use(jwtService)

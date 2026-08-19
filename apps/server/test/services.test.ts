@@ -44,7 +44,7 @@ const transaction = {
 };
 const redisMulti = mock(() => transaction);
 
-mock.module("@/lib/redis", () => ({
+mock.module("@server/lib/redis", () => ({
   redis: {
     get: redisGet,
     setex: redisSetex,
@@ -86,7 +86,7 @@ const updateSet = mock((values: unknown) => {
 });
 const update = mock(() => ({ set: updateSet }));
 
-mock.module("@/lib/db", () => ({
+mock.module("@server/lib/db", () => ({
   db: {
     query: { users: { findFirst } },
     insert,
@@ -96,16 +96,16 @@ mock.module("@/lib/db", () => ({
 }));
 
 const sendMail = mock(async () => ({ messageId: "mail-id" }));
-mock.module("@/lib/mail", () => ({ sendMail }));
-mock.module("@/emails/render", () => ({
+mock.module("@server/lib/mail", () => ({ sendMail }));
+mock.module("@server/emails/render", () => ({
   renderVerifyEmail: (url: string) => `verify:${url}`,
   renderResetPasswordEmail: (url: string) => `reset:${url}`,
   renderOtpEmail: (code: string) => `otp:${code}`,
 }));
 
-const { AuthService } = await import("@/modules/auth/service");
-const { UserService } = await import("@/modules/user/service");
-const { BadCredentialsError, NotFoundError } = await import("@/error");
+const { AuthService } = await import("@server/modules/auth/service");
+const { UserService } = await import("@server/modules/user/service");
+const { BadCredentialsError, NotFoundError } = await import("@server/error");
 
 const baseUser = {
   id: "user-1",

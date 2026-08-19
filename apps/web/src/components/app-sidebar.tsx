@@ -1,8 +1,7 @@
-import * as React from "react";
-import { Home } from "lucide-react";
+import type { ComponentProps } from "react"
 
-import { NavMain } from "@/components/nav-main";
-import { NavUser } from "@/components/nav-user";
+import { NavMain } from "@/components/nav-main"
+import { NavUser } from "@/components/nav-user"
 import {
   Sidebar,
   SidebarContent,
@@ -11,40 +10,29 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
-} from "@/components/ui/sidebar";
+} from "@/components/ui/sidebar"
+import type { CurrentUser } from "@/lib/api"
 
-const data = {
-  navMain: [
-    {
-      title: "Home",
-      url: "/home",
-      icon: Home,
-    },
-  ],
-};
-
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+export function AppSidebar({
+  user,
+  ...props
+}: ComponentProps<typeof Sidebar> & { user: CurrentUser }) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
         <SidebarMenuItem>
-          <SidebarMenuButton
-            asChild
-            className="data-[slot=sidebar-menu-button]:!p-1.5"
-          >
-            <span className="text-lg font-semibold text-primary">
-              REACT-AUTH
-            </span>
+          <SidebarMenuButton className="data-[slot=sidebar-menu-button]:!p-1.5">
+            <span className="text-lg font-semibold text-primary">AUTH KIT</span>
           </SidebarMenuButton>
         </SidebarMenuItem>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <NavMain role={user.role} />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser  />
+        <NavUser user={user} />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
-  );
+  )
 }

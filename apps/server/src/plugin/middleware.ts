@@ -1,9 +1,9 @@
 import { Elysia } from "elysia";
 import { jwtService } from "./jwt";
 import { bearer } from "@elysiajs/bearer";
-import { type UserRole } from "@/drizzle/migrations/schema";
-import type { AuthContext } from "@/modules/auth/model";
-import { ForbiddenError, UnauthorizedError } from "@/error";
+import { type UserRole } from "@server/drizzle/migrations/schema";
+import type { AuthContext } from "@server/modules/auth/model";
+import { ForbiddenError, UnauthorizedError } from "@server/error";
 
 export const authGuard = new Elysia({ name: "auth-guard" })
   .use(jwtService)

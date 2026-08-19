@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { getTableName } from "drizzle-orm";
-import * as schema from "@/drizzle/migrations/schema";
+import * as schema from "@server/drizzle/migrations/schema";
 
 describe("schema persistente", () => {
   test("expõe somente a tabela de usuários", () => {

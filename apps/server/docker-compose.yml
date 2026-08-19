@@ -6,7 +6,7 @@ services:
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      POSTGRES_DB: ${POSTGRES_DB:-saas_starter}
+      POSTGRES_DATABASE: ${POSTGRES_DB:-saas_starter}
     ports:
       - "5432:5432"
     volumes:
@@ -35,25 +35,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-
-  app:
-    build:
-      context: .
-      args:
-        DATABASE_URL: ${DATABASE_URL}
-    container_name: elysia_app
-    restart: always
-    ports:
-      - "3000:3000"
-    depends_on:
-      postgres_db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    env_file:
-      - .env.local
-    environment:
-      NODE_ENV: production
 
 volumes:
   postgres_data:

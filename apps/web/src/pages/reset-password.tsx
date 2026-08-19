@@ -1,111 +1,120 @@
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useNavigate } from "react-router";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { useState } from "react"
+import { useNavigate } from "@tanstack/react-router"
+
+import { useAppForm } from "@/components/forms/app-form"
+import { FormRootError } from "@/components/forms/form-components"
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from "@/components/ui/card"
+import { toast } from "@/components/ui/toast"
+import { api, getApiErrorMessage } from "@/lib/api"
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import api from "@/services/api";
-import { toast } from "sonner";
-import { useQueryState } from "nuqs";
-import { resetPasswordSchema, type ResetPasswordValues } from "@/types";
+  resetPasswordSchema,
+  type ResetPasswordValues,
+} from "@/types"
 
+export default function ResetPassword({ token }: { token?: string }) {
+  const navigate = useNavigate()
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
-
-export default function ResetPasswordForm() {
-  const [token] = useQueryState("token", { defaultValue: "vazio" });
-
-  const navigate = useNavigate();
-
-  const form = useForm<ResetPasswordValues>({
-    resolver: zodResolver(resetPasswordSchema),
+  const form = useAppForm({
     defaultValues: {
       newPassword: "",
       confirmPassword: "",
+    } satisfies ResetPasswordValues,
+    validators: {
+      onSubmit: resetPasswordSchema,
     },
-  });
+    onSubmit: async ({ value }) => {
+      if (!token) {
+        setSubmitError("O link de redefinição é inválido ou está incompleto.")
+        return
+      }
 
-  async function onSubmit(data: ResetPasswordValues) {
-    await api
-      .put("/users/password-reset", {
-        token: token,
-        newPassword: data.newPassword,
+      setSubmitError(null)
+
+      const result = await api.users["password-reset"].put({
+        token,
+        newPassword: value.newPassword,
       })
-      .then(() => {
-        toast.success("Senha alterada com sucesso!", {
-          description: "Você pode agora fazer login com sua nova senha",
-        });
-        navigate("/login");
+
+      if (result.error) {
+        setSubmitError(
+          getApiErrorMessage(result.error.value, "Erro ao redefinir a senha."),
+        )
+        return
+      }
+
+      toast.add({
+        type: "success",
+        title: "Senha alterada com sucesso!",
+        description: "Você já pode entrar usando a nova senha.",
       })
-      .catch((error) => {
-        toast.error("Erro ao resetar a senha", {
-          description: error?.response?.data,
-        });
-      });
-  }
+      await navigate({ to: "/login" })
+    },
+  })
 
   return (
-    <Card className="w-full max-w-md mx-auto">
-      <CardHeader>
-        <CardTitle>Redefinir Senha</CardTitle>
-        <CardDescription>
-          Digite sua nova senha abaixo para redefinir sua conta.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="newPassword"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nova Senha</FormLabel>
-                  <FormControl>
-                    <Input type="password" placeholder="********" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="confirmPassword"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Confirmar Nova Senha</FormLabel>
-                  <FormControl>
-                    <Input type="password" placeholder="********" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={form.formState.isSubmitting}
-            >
-              {form.formState.isSubmitting
-                ? "Redefinindo..."
-                : "Redefinir Senha"}
-            </Button>
+    <main className="flex min-h-svh items-start justify-center p-4 pt-10">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle>Redefinir senha</CardTitle>
+          <CardDescription>
+            Digite sua nova senha para recuperar o acesso à conta.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form
+            className="space-y-4"
+            onSubmit={(event) => {
+              event.preventDefault()
+              event.stopPropagation()
+              void form.handleSubmit()
+            }}
+          >
+            <form.AppForm>
+              <FormRootError
+                message={
+                  token
+                    ? submitError
+                    : "O link de redefinição é inválido ou está incompleto."
+                }
+              />
+              <form.AppField name="newPassword">
+                {(field) => (
+                  <field.TextField
+                    label="Nova senha"
+                    type="password"
+                    placeholder="••••••••"
+                    autoComplete="new-password"
+                    disabled={!token}
+                  />
+                )}
+              </form.AppField>
+              <form.AppField name="confirmPassword">
+                {(field) => (
+                  <field.TextField
+                    label="Confirmar nova senha"
+                    type="password"
+                    placeholder="••••••••"
+                    autoComplete="new-password"
+                    disabled={!token}
+                  />
+                )}
+              </form.AppField>
+              <form.SubmitButton
+                className="w-full"
+                idleLabel="Redefinir senha"
+                submittingLabel="Redefinindo..."
+              />
+            </form.AppForm>
           </form>
-        </Form>
-      </CardContent>
-    </Card>
-  );
+        </CardContent>
+      </Card>
+    </main>
+  )
 }

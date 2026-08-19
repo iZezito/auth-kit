@@ -1,13 +1,13 @@
 import type { AuthBody } from "./model";
 import { password } from "bun";
-import { renderOtpEmail } from "@/emails/render";
-import { sendMail } from "@/lib/mail";
-import type { UserPlain } from "@/modules/user/model";
-import { BadCredentialsError } from "@/error";
-import { db } from "@/lib/db";
-import { users } from "@/drizzle/migrations/schema";
+import { renderOtpEmail } from "@server/emails/render";
+import { sendMail } from "@server/lib/mail";
+import type { UserPlain } from "@server/modules/user/model";
+import { BadCredentialsError } from "@server/error";
+import { db } from "@server/lib/db";
+import { users } from "@server/drizzle/migrations/schema";
 import { eq } from "drizzle-orm";
-import { redis, redisKeys, redisTtl } from "@/lib/redis";
+import { redis, redisKeys, redisTtl } from "@server/lib/redis";
 
 export abstract class AuthService {
   static async login(body: AuthBody) {

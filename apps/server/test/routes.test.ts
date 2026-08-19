@@ -21,7 +21,7 @@ const UserService = {
   update: userUpdate,
 };
 
-mock.module("@/modules/user/service", () => ({ UserService }));
+mock.module("@server/modules/user/service", () => ({ UserService }));
 
 const authLogin = mock(async () => undefined as any);
 const authSend2FACode = mock(async () => undefined);
@@ -33,7 +33,7 @@ const AuthService = {
   validate2FACode: authValidate2FACode,
 };
 
-mock.module("@/modules/auth/service", () => ({ AuthService }));
+mock.module("@server/modules/auth/service", () => ({ AuthService }));
 
 const googleCreateAuthorizationURL = mock(
   (state: string, _codeVerifier: string, _scopes: string[]) =>
@@ -45,7 +45,7 @@ const googleValidateAuthorizationCode = mock(async () => ({
   idToken: () => "google-id-token",
 }));
 
-mock.module("@/modules/auth/model", () => ({
+mock.module("@server/modules/auth/model", () => ({
   authSchema: t.Object({
     email: t.String({ format: "email" }),
     password: t.String({ minLength: 6 }),
@@ -90,15 +90,15 @@ const redisTtl = {
   twoFactor: 7_200,
 };
 
-mock.module("@/lib/redis", () => ({
+mock.module("@server/lib/redis", () => ({
   redis: { setex: redisSetex, del: redisDel },
   redisKeys,
   redisTtl,
 }));
 
 const sendMail = mock(async () => ({ messageId: "mail-id" }));
-mock.module("@/lib/mail", () => ({ sendMail }));
-mock.module("@/emails/render", () => ({
+mock.module("@server/lib/mail", () => ({ sendMail }));
+mock.module("@server/emails/render", () => ({
   renderVerifyEmail: (url: string) => `verify:${url}`,
   renderResetPasswordEmail: (url: string) => `reset:${url}`,
   renderOtpEmail: (code: string) => `otp:${code}`,
@@ -112,12 +112,12 @@ const oauthValues = mock(() => ({
 }));
 const dbInsert = mock(() => ({ values: oauthValues }));
 
-mock.module("@/lib/db", () => ({
+mock.module("@server/lib/db", () => ({
   db: { insert: dbInsert },
 }));
 
-const { createApp } = await import("@/app");
-const { BadCredentialsError } = await import("@/error");
+const { createApp } = await import("@server/app");
+const { BadCredentialsError } = await import("@server/error");
 
 type StoredUser = {
   id: string;

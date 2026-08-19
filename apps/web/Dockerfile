@@ -1,20 +1,19 @@
-# Stage 1: Build da aplicação
-FROM oven/bun AS build
+FROM oven/bun:1.3.14 AS build
 
 WORKDIR /app
 
-COPY package.json bun.lock ./
+COPY . .
 RUN bun install --frozen-lockfile
 
-COPY . .
-RUN bun run build
+ARG VITE_BASE_URL=http://localhost:3000
+ENV VITE_BASE_URL=$VITE_BASE_URL
 
-# Stage 2: Servir com Nginx
+RUN bun run --cwd apps/web build
+
 FROM nginx:alpine
 
-COPY --from=build /app/dist /usr/share/nginx/html
-
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /app/apps/web/dist /usr/share/nginx/html
+COPY apps/web/nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
 

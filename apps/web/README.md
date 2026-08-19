@@ -1,69 +1,50 @@
-# React + TypeScript + Vite
+# Auth Kit Web
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Frontend oficial do Auth Kit, construído com React 19, Vite, TypeScript,
+TanStack Router, TanStack Form, TanStack Query, Eden Treaty, Tailwind CSS e
+shadcn/Base UI.
 
-Currently, two official plugins are available:
+## Desenvolvimento
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Instale as dependências na raiz do monorepo e inicie o app:
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```sh
+bun install
+bun run --cwd apps/web dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+O frontend usa `http://localhost:5173` por padrão. Configure a API em um arquivo
+`.env` local:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+```sh
+VITE_BASE_URL=http://localhost:3000
+```
 
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Rotas
+
+As rotas file-based são organizadas por layouts pathless:
+
+- `src/routes/_guest`: páginas exclusivas para visitantes.
+- `src/routes/_authenticated`: páginas que exigem uma sessão válida.
+- `src/routes/_authenticated/_admin`: páginas que também exigem a role
+  `ADMIN`.
+
+Cada diretório usa `route.tsx` como layout e mantém suas páginas em arquivos
+separados. Novas rotas administrativas devem ser criadas dentro de `_admin`.
+
+## Verificações
+
+```sh
+bun run --cwd apps/web lint
+bun run --cwd apps/web check-types
+bun run --cwd apps/web test
+bun run --cwd apps/web build
+```
+
+## Container
+
+A imagem deve ser construída usando a raiz do monorepo como contexto:
+
+```sh
+docker compose -f apps/web/docker-compose.yml up --build
 ```

@@ -3,9 +3,9 @@ import cors from "@elysiajs/cors";
 import { openapi } from "@elysiajs/openapi";
 import { SQL } from "bun";
 import { DrizzleQueryError } from "drizzle-orm";
-import { authController } from "@/modules/auth";
-import { userController } from "@/modules/user";
-import { CustomError } from "@/error";
+import { authController } from "@server/modules/auth";
+import { userController } from "@server/modules/user";
+import { CustomError } from "@server/error";
 
 export const createApp = () =>
   new Elysia()

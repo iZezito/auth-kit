@@ -1,24 +1,11 @@
-import ContentLoader from "@/components/content-loader";
-import { PageLayout } from "@/components/page-layout";
-import { ProfileForm } from "@/components/profile-form";
-import { useAuth } from "@/contexts/AuthContext";
+import { PageLayout } from "@/components/page-layout"
+import { ProfileForm } from "@/components/profile-form"
+import type { CurrentUser } from "@/lib/api"
 
-export default function Profile() {
-  const { user, loading, error } = useAuth();
-
+export default function Profile({ user }: { user: CurrentUser }) {
   return (
-    <PageLayout breadcrumbs={[{ label: "Meus Dados" }]}>
-      <ContentLoader
-        loading={loading}
-        error={error}
-        noContent={"Nenhum dado!"}
-      >
-        {user && (
-          <ProfileForm
-            user={user}
-          />
-        )}
-      </ContentLoader>
+    <PageLayout breadcrumbs={[{ label: "Meus dados" }]}>
+      <ProfileForm user={user} />
     </PageLayout>
-  );
+  )
 }

@@ -1,4 +1,4 @@
-import { createApp } from "@/app";
+import { createApp } from "@server/app";
 
 const app = createApp().listen(Bun.env.PORT ?? 3000);
 

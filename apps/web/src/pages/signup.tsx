@@ -1,146 +1,113 @@
-import { useNavigate } from "react-router";
-import { type CreateUser, type User, userSchema } from "@/types";
+import { useState } from "react"
+import { useNavigate } from "@tanstack/react-router"
 
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { useAppForm } from "@/components/forms/app-form"
+import { FormRootError } from "@/components/forms/form-components"
+import { toast } from "@/components/ui/toast"
+import { api, getApiErrorMessage } from "@/lib/api"
+import { toSignupPayload } from "@/lib/payloads"
+import { userSchema, type CreateUser } from "@/types"
 
-import { useService } from "@/hooks/use-service";
-import { Fragment } from "react";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { toast } from "sonner";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+export default function Signup() {
+  const navigate = useNavigate()
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
-export function SignupForm() {
-  const navigate = useNavigate();
-
-  const form = useForm<CreateUser>({
-    resolver: zodResolver(userSchema),
+  const form = useAppForm({
     defaultValues: {
       name: "",
       email: "",
       password: "",
       repetirSenha: "",
+    } satisfies CreateUser,
+    validators: {
+      onSubmit: userSchema,
     },
-  });
+    onSubmit: async ({ value }) => {
+      setSubmitError(null)
 
-  const { create } = useService<User>("users");
+      const result = await api.users.post(toSignupPayload(value))
 
-  const onSubmit = async (data: CreateUser) => {
-    await create(data)
-      .then(() => {
-        toast.success("Usuário criado com sucesso!", {
-          description: `Um email foi enviado para ${data.email} com as instruções para a confirmação da conta`,
-        });
-        navigate("/login");
+      if (result.error) {
+        setSubmitError(
+          getApiErrorMessage(result.error.value, "Erro ao criar usuário"),
+        )
+        return
+      }
+
+      toast.add({
+        type: "success",
+        title: "Usuário criado com sucesso!",
+        description: `Enviamos as instruções de confirmação para ${value.email}.`,
       })
-      .catch((error) => {
-        form.setError("root", {
-          type: "manual",
-          message: error?.response?.data.message || "Erro ao criar usuário",
-        });
-        return;
-      });
-  };
+      await navigate({ to: "/login" })
+    },
+  })
 
   return (
-    <Fragment>
-      <Form {...form}>
-        <form
-          onSubmit={form.handleSubmit(onSubmit)}
-          className="space-y-8 max-w-4xl mx-auto"
-        >
-          <div className="space-y-2 mt-3">
-            <h1 className="text-2xl font-bold tracking-tight">
-              Cadastro de Usuário
+    <main className="mx-auto w-full max-w-4xl p-4 pt-10">
+      <form
+        className="space-y-8"
+        onSubmit={(event) => {
+          event.preventDefault()
+          event.stopPropagation()
+          void form.handleSubmit()
+        }}
+      >
+        <form.AppForm>
+          <div className="space-y-2">
+            <h1 className="font-heading text-2xl font-bold tracking-tight">
+              Cadastro de usuário
             </h1>
             <p className="text-muted-foreground">
-              Preencha os campos abaixo para criar sua conta no sistema.
+              Preencha os campos abaixo para criar sua conta.
             </p>
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nome</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Seu nome" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
+          <FormRootError message={submitError} />
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <form.AppField name="name">
+              {(field) => (
+                <field.TextField label="Nome" placeholder="Seu nome" />
               )}
-            />
-
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="email"
-                      placeholder="email@exemplo.com"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
+            </form.AppField>
+            <form.AppField name="email">
+              {(field) => (
+                <field.TextField
+                  label="E-mail"
+                  type="email"
+                  placeholder="email@exemplo.com"
+                  autoComplete="email"
+                />
               )}
-            />
+            </form.AppField>
+            <form.AppField name="password">
+              {(field) => (
+                <field.TextField
+                  label="Senha"
+                  type="password"
+                  placeholder="••••••••"
+                  autoComplete="new-password"
+                />
+              )}
+            </form.AppField>
+            <form.AppField name="repetirSenha">
+              {(field) => (
+                <field.TextField
+                  label="Repetir senha"
+                  type="password"
+                  placeholder="••••••••"
+                  autoComplete="new-password"
+                />
+              )}
+            </form.AppField>
           </div>
-
-          <FormField
-            control={form.control}
-            name="password"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Senha</FormLabel>
-                <FormControl>
-                  <Input type="password" placeholder="******" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="repetirSenha"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Repetir Senha</FormLabel>
-                <FormControl>
-                  <Input
-                    type="password"
-                    placeholder="******"
-                    required
-                    {...field}
-                    disabled={form.formState.isSubmitting}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
           <div className="flex justify-end">
-            <Button type="submit">
-              {form.formState.isSubmitting ? "Salvando..." : "Salvar"}
-            </Button>
+            <form.SubmitButton
+              idleLabel="Salvar"
+              submittingLabel="Salvando..."
+            />
           </div>
-        </form>
-      </Form>
-    </Fragment>
-  );
+        </form.AppForm>
+      </form>
+    </main>
+  )
 }

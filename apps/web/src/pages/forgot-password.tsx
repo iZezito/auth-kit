@@ -1,89 +1,92 @@
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { useState } from "react"
+
+import { useAppForm } from "@/components/forms/app-form"
+import { FormRootError } from "@/components/forms/form-components"
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from "@/components/ui/card"
+import { toast } from "@/components/ui/toast"
+import { api, getApiErrorMessage } from "@/lib/api"
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import api from "@/services/api";
-import { toast } from "sonner";
-import { forgotPasswordSchema, type ForgotPasswordValues } from "@/types";
+  forgotPasswordSchema,
+  type ForgotPasswordValues,
+} from "@/types"
 
-export default function ForgotPasswordForm() {
-  const form = useForm<ForgotPasswordValues>({
-    resolver: zodResolver(forgotPasswordSchema),
+export default function ForgotPassword() {
+  const [submitError, setSubmitError] = useState<string | null>(null)
+
+  const form = useAppForm({
     defaultValues: {
       email: "",
+    } satisfies ForgotPasswordValues,
+    validators: {
+      onSubmit: forgotPasswordSchema,
     },
-  });
+    onSubmit: async ({ value }) => {
+      setSubmitError(null)
 
-  async function onSubmit(data: ForgotPasswordValues) {
-    await api
-      .post("/users/forgot-password", {
-        email: data.email,
+      const result = await api.users["forgot-password"].post({
+        email: value.email,
       })
-      .then((response) => {
-        toast(response.data);
-        form.reset();
-      })
-      .catch((error) => {
-        toast.error("Erro ao enviar o token de recuperação de senha.", {
-          description:
-            error?.response?.data ||
-            "Não foi possível enviar o token de recuperação de senha.",
-        });
-      });
-  }
+
+      if (result.error) {
+        setSubmitError(
+          getApiErrorMessage(
+            result.error.value,
+            "Erro ao enviar as instruções de recuperação.",
+          ),
+        )
+        return
+      }
+
+      toast.add({ type: "success", title: result.data })
+      form.reset()
+    },
+  })
 
   return (
-    <Card className="w-full max-w-md mx-auto mt-8">
-      <CardHeader>
-        <CardTitle>Esqueceu sua senha?</CardTitle>
-        <CardDescription>
-          Digite seu email abaixo para receber instruções de recuperação de
-          senha.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input placeholder="seu@email.com" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={form.formState.isSubmitting}
-            >
-              {form.formState.isSubmitting
-                ? "Enviando..."
-                : "Enviar instruções"}
-            </Button>
+    <main className="flex min-h-svh items-start justify-center p-4 pt-10">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle>Esqueceu sua senha?</CardTitle>
+          <CardDescription>
+            Digite seu e-mail para receber as instruções de recuperação.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form
+            className="space-y-4"
+            onSubmit={(event) => {
+              event.preventDefault()
+              event.stopPropagation()
+              void form.handleSubmit()
+            }}
+          >
+            <form.AppForm>
+              <FormRootError message={submitError} />
+              <form.AppField name="email">
+                {(field) => (
+                  <field.TextField
+                    label="E-mail"
+                    type="email"
+                    placeholder="seu@email.com"
+                    autoComplete="email"
+                  />
+                )}
+              </form.AppField>
+              <form.SubmitButton
+                className="w-full"
+                idleLabel="Enviar instruções"
+                submittingLabel="Enviando..."
+              />
+            </form.AppForm>
           </form>
-        </Form>
-      </CardContent>
-    </Card>
-  );
+        </CardContent>
+      </Card>
+    </main>
+  )
 }

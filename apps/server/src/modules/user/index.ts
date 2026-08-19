@@ -1,10 +1,10 @@
 import { Elysia, t } from "elysia";
 import { UserService } from "./service";
-import { authGuard } from "@/plugin/middleware";
-import { sendMail } from "@/lib/mail";
-import { renderResetPasswordEmail } from "@/emails/render";
+import { authGuard } from "@server/plugin/middleware";
+import { sendMail } from "@server/lib/mail";
+import { renderResetPasswordEmail } from "@server/emails/render";
 
-import { paramModel } from "@/plugin/model";
+import { paramModel } from "@server/plugin/model";
 import { _selectUser, createUser, selectUser, updateUser } from "./model";
 
 export const userController = new Elysia({ prefix: "/users" })
