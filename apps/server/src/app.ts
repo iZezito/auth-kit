@@ -6,6 +6,7 @@ import { DrizzleQueryError } from "drizzle-orm";
 import { authController } from "@server/modules/auth";
 import { userController } from "@server/modules/user";
 import { CustomError } from "@server/error";
+import { rateLimitPlugin } from "@server/plugin/rate-limit";
 
 export const createApp = () =>
   new Elysia()
@@ -14,6 +15,15 @@ export const createApp = () =>
         origin: Bun.env.CLIENT_URL || "http://localhost:5173",
         methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
         allowedHeaders: ["Content-Type", "Authorization"],
+        exposeHeaders: [
+          "RateLimit-Limit",
+          "RateLimit-Remaining",
+          "RateLimit-Reset",
+          "Retry-After",
+          "X-RateLimit-Limit",
+          "X-RateLimit-Remaining",
+          "X-RateLimit-Reset",
+        ],
         credentials: true,
       }),
     )
@@ -37,7 +47,9 @@ export const createApp = () =>
       }
     })
     .use(openapi())
-    .use(userController)
-    .use(authController);
+    .use(rateLimitPlugin)
+    .guard({ rateLimit: "global" }, (app) =>
+      app.use(userController).use(authController),
+    );
 
 export type App = ReturnType<typeof createApp>;

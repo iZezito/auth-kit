@@ -4,6 +4,7 @@
   "scripts": {
     "test": "NODE_ENV=test bun test --preload ./test/preload.ts --isolate",
     "test:coverage": "NODE_ENV=test bun test --preload ./test/preload.ts --isolate --coverage",
+    "test:rate-limit:integration": "NODE_ENV=test RATE_LIMIT_INTEGRATION=true bun test --preload ./test/preload.ts --isolate test/rate-limit.integration.test.ts",
     "dev": "bun run --watch src/index.ts",
     "email": "email dev --dir src/emails",
     "db:generate": "drizzle-kit generate",

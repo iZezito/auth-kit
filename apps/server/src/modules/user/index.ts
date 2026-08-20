@@ -6,17 +6,21 @@ import { renderResetPasswordEmail } from "@server/emails/render";
 
 import { paramModel } from "@server/plugin/model";
 import { _selectUser, createUser, selectUser, updateUser } from "./model";
+import { rateLimitPlugin } from "@server/plugin/rate-limit";
 
 export const userController = new Elysia({ prefix: "/users" })
+  .use(rateLimitPlugin)
   .use(paramModel)
   .post(
     "",
     async ({ body, status }) => {
       await UserService.save(body);
-      return status(201);
+      return status(201, undefined);
     },
     {
       body: createUser,
+      response: { 201: t.Any() },
+      rateLimit: "signup",
     },
   )
   .get(
@@ -33,6 +37,7 @@ export const userController = new Elysia({ prefix: "/users" })
       query: t.Object({
         token: t.String(),
       }),
+      rateLimit: "verifyEmail",
     },
   )
   .post(
@@ -57,6 +62,7 @@ export const userController = new Elysia({ prefix: "/users" })
           format: "email",
         }),
       }),
+      rateLimit: "forgotPassword",
     },
   )
   .put(
@@ -83,6 +89,7 @@ export const userController = new Elysia({ prefix: "/users" })
         }),
         token: t.String(),
       }),
+      rateLimit: "resetPassword",
     },
   )
   .use(authGuard)
@@ -112,6 +119,7 @@ export const userController = new Elysia({ prefix: "/users" })
       },
       body: updateUser,
       params: "params-id",
+      rateLimit: "authenticatedMutation",
     },
   )
   .get(

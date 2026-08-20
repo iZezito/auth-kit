@@ -7,8 +7,10 @@ import { redis, redisKeys, redisTtl } from "@server/lib/redis";
 import { authGuard } from "@server/plugin/middleware";
 import { db } from "@server/lib/db";
 import { users } from "@server/drizzle/migrations/schema";
+import { rateLimitPlugin } from "@server/plugin/rate-limit";
 
 export const authController = new Elysia({ prefix: "/auth" })
+  .use(rateLimitPlugin)
   .use(jwtService)
   .post(
     "/login",
@@ -62,23 +64,28 @@ export const authController = new Elysia({ prefix: "/auth" })
         400: t.Object({ message: t.String() }),
         403: t.Object({ message: t.String() }),
       },
+      rateLimit: "login",
     },
   )
   .decorate(
     "pkceStore",
     new Map<string, { state: string; codeVerifier: string }>(),
   )
-  .get("/oauth/google", async ({ redirect, pkceStore }) => {
-    const state = arctic.generateState();
-    const codeVerifier = arctic.generateCodeVerifier();
-    const scopes = ["openid", "profile", "email"];
+  .get(
+    "/oauth/google",
+    async ({ redirect, pkceStore }) => {
+      const state = arctic.generateState();
+      const codeVerifier = arctic.generateCodeVerifier();
+      const scopes = ["openid", "profile", "email"];
 
-    const url = google.createAuthorizationURL(state, codeVerifier, scopes);
-    url.searchParams.set("access_type", "offline");
-    pkceStore.set(state, { state, codeVerifier });
+      const url = google.createAuthorizationURL(state, codeVerifier, scopes);
+      url.searchParams.set("access_type", "offline");
+      pkceStore.set(state, { state, codeVerifier });
 
-    return redirect(url.toString());
-  })
+      return redirect(url.toString());
+    },
+    { rateLimit: "oauth" },
+  )
   .get(
     "/oauth/google/callback",
     async ({
@@ -157,6 +164,12 @@ export const authController = new Elysia({ prefix: "/auth" })
         code: t.String(),
         state: t.String(),
       }),
+      response: {
+        302: t.Any(),
+        400: t.Object({ error: t.String() }),
+        500: t.Object({ error: t.String() }),
+      },
+      rateLimit: "oauthCallback",
     },
   )
   .use(authGuard)
@@ -172,5 +185,6 @@ export const authController = new Elysia({ prefix: "/auth" })
       response: t.Object({
         message: t.String(),
       }),
+      rateLimit: "authenticatedMutation",
     },
   );
